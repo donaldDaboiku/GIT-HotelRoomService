@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'hotel.staff' => EnsureHotelStaff::class,
             'role' => EnsureRole::class,
         ]);
+        $middleware->trustProxies(at: '*');
         $middleware->api(prepend: [
             SecurityHeaders::class,
         ]);

@@ -1,6 +1,36 @@
 # Deployment
 
-The API and the web app are deployed separately. PostgreSQL is not exposed to the browser.
+## Render
+
+The guest site and the API are one Docker service. Do not use `npm run dev` or a build command of `yarn`. Those look for a `package.json` in the repository root, and this project does not have one.
+
+1. Commit and push `Dockerfile`, `docker/`, and `render.yaml`.
+2. In the Render service, set **Language / Runtime** to **Docker**.
+3. Set **Dockerfile Path** to `./Dockerfile` and **Docker Build Context Directory** to `.` (the repository root).
+4. Clear the custom **Build Command** and **Start Command**. Docker uses the command in the image.
+5. Add a PostgreSQL database in the same region and set `DB_URL` to its internal connection string.
+6. Set these environment variables:
+
+| Variable | Value |
+| --- | --- |
+| `APP_ENV` | `production` |
+| `APP_DEBUG` | `false` |
+| `APP_KEY` | output of `php artisan key:generate --show` on your machine |
+| `DB_CONNECTION` | `pgsql` |
+| `DB_URL` | Render Postgres internal URL |
+| `CACHE_STORE` | `file` |
+| `SESSION_DRIVER` | `file` |
+| `QUEUE_CONNECTION` | `sync` |
+
+`APP_URL`, `FRONTEND_URL`, and `CORS_ALLOWED_ORIGINS` are set from Render’s public URL when the container starts. QR codes use that URL.
+
+The first deploy migrates the database. It does not load the demo hotel. To load the demo once, open the Render shell in the service and run `php artisan db:seed` after setting `SEED_PASSWORD`. Remove that password afterward.
+
+Health check: `GET /api/v1/health`.
+
+## Other hosts
+
+The API and the web app can still be deployed separately. PostgreSQL is not exposed to the browser.
 
 ## API
 
