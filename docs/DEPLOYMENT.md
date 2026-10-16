@@ -8,7 +8,7 @@ The guest site and the API are one Docker service. Do not use `npm run dev` or a
 2. In the Render service, set **Language / Runtime** to **Docker**.
 3. Set **Dockerfile Path** to `./Dockerfile` and **Docker Build Context Directory** to `.` (the repository root).
 4. Clear the custom **Build Command** and **Start Command**. Docker uses the command in the image.
-5. Add a PostgreSQL database in the same region and set `DB_URL` to its internal connection string.
+5. Add a PostgreSQL database in the same region and connect it to this service. Render then sets `DATABASE_URL`. The container uses that value. Without it, production startup stops instead of migrating a local SQLite file.
 6. Set these environment variables:
 
 | Variable | Value |
