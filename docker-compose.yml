@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:18
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: git
+      POSTGRES_PASSWORD: git_local_dev
+      POSTGRES_DB: git_hotel
+    volumes:
+      - git_hotel_pg:/var/lib/postgresql/data
+
+volumes:
+  git_hotel_pg:

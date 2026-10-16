@@ -1,0 +1,6 @@
+.env
+api/.env
+web/.env
+api/vendor
+web/node_modules
+api/storage/*.key
