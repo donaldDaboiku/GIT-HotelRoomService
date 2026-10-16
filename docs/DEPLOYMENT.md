@@ -16,8 +16,8 @@ The guest site and the API are one Docker service. Do not use `npm run dev` or a
 | `APP_ENV` | `production` |
 | `APP_DEBUG` | `false` |
 | `APP_KEY` | output of `php artisan key:generate --show` on your machine |
-| `DB_CONNECTION` | `pgsql` |
-| `DB_URL` | Render Postgres internal URL |
+| `DB_CONNECTION` | `pgsql` (the container sets this itself) |
+| `DATABASE_URL` | Set automatically when the Postgres database is connected |
 | `CACHE_STORE` | `file` |
 | `SESSION_DRIVER` | `file` |
 | `QUEUE_CONNECTION` | `sync` |

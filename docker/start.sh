@@ -10,11 +10,9 @@ fi
 if [ -n "${DATABASE_URL:-}" ] && [ -z "${DB_URL:-}" ]; then
     export DB_URL="$DATABASE_URL"
 fi
-if [ -n "${DB_URL:-}" ] && [ -z "${DB_CONNECTION:-}" ]; then
-    export DB_CONNECTION=pgsql
-fi
-if [ "${APP_ENV:-production}" = "production" ] && [ "${DB_CONNECTION:-sqlite}" != "pgsql" ]; then
-    echo "Refusing to migrate SQLite in production. In Render, add a PostgreSQL database and connect it to this service so DATABASE_URL is set."
+export DB_CONNECTION=pgsql
+if [ -z "${DB_URL:-}" ]; then
+    echo "PostgreSQL is required. Connect a Render Postgres database to this service so DATABASE_URL is set."
     exit 1
 fi
 
