@@ -15,6 +15,12 @@ if [ -z "${DB_URL:-}" ]; then
     echo "PostgreSQL is required. Connect a Render Postgres database to this service so DATABASE_URL is set."
     exit 1
 fi
+case "${APP_KEY:-}" in
+    ""|base64:)
+        echo "APP_KEY is required. Generate one with: php artisan key:generate --show"
+        exit 1
+        ;;
+esac
 
 sed "s/__PORT__/${PORT:-10000}/" /etc/nginx/conf.d/app.conf > /tmp/app.conf
 mv /tmp/app.conf /etc/nginx/conf.d/app.conf

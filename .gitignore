@@ -4,3 +4,7 @@ web/.env
 api/vendor
 web/node_modules
 api/storage/*.key
+api/database/*.sqlite
+api/database/*.sqlite-journal
+api/database/*.sqlite
+api/database/*.sqlite-journal

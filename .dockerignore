@@ -3,5 +3,7 @@ api/.env
 api/vendor
 api/node_modules
 api/storage/logs
+api/database/*.sqlite
+api/database/*.sqlite-journal
 web/node_modules
 web/dist

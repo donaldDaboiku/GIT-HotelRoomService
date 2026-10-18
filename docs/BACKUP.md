@@ -39,3 +39,5 @@ Confirm `APP_KEY` matches the environment that encrypted any framework data. Gue
 3. Confirm a private attachment downloads only for staff at that hotel.
 
 Test restores on a copy. Do not restore a production dump over the live database without a fresh dump taken immediately before.
+
+On 17 October 2026 this restore was executed locally. `pg_dump` of `git_hotel` was restored into an empty database, `git_hotel_restore`. That copy contained 3 hotels. The copy and the dump file were then removed. The source database was left unchanged.

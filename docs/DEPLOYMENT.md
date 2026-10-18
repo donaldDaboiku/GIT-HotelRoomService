@@ -24,6 +24,8 @@ The guest site and the API are one Docker service. Do not use `npm run dev` or a
 
 `APP_URL`, `FRONTEND_URL`, and `CORS_ALLOWED_ORIGINS` are set from Render’s public URL when the container starts. QR codes use that URL.
 
+The container refuses to start when `DATABASE_URL` or `APP_KEY` is empty. Generate the key on your machine with `php artisan key:generate --show` inside `api/`, paste it into the Render environment, and do not commit it.
+
 The first deploy migrates the database. It does not load the demo hotel. To load the demo once, open the Render shell in the service and run `php artisan db:seed` after setting `SEED_PASSWORD`. Remove that password afterward.
 
 Health check: `GET /api/v1/health`.
@@ -40,7 +42,7 @@ The API and the web app can still be deployed separately. PostgreSQL is not expo
 4. Point `DB_*` at the production database. Do not reuse `git_local_dev`.
 5. Run `composer install --no-dev --optimize-autoloader`, `php artisan migrate --force`, and `php artisan storage:link`.
 6. Serve `api/public` through PHP-FPM or another FastCGI host. Do not expose `storage/app/private`. The local disk has `serve` set to false so Laravel will not publish private uploads.
-7. Run `php artisan config:cache` and `php artisan route:cache` after the environment is final.
+7. Run `php artisan config:cache` and `php artisan view:cache` after the environment is final. Do not run `php artisan route:cache`: `routes/web.php` still uses a closure, and the cache command refuses that file. The Docker start script follows the same rule.
 
 Seed the demo hotel only on a non-production database.
 
@@ -69,3 +71,13 @@ QR codes use `FRONTEND_URL`. Reprint room cards after that value changes, or rei
 ## Health
 
 `GET /api/v1/health` returns the API status without hotel data. Platform administrators also have `GET /api/v1/platform/health` for hotel counts.
+
+## Security headers
+
+The API middleware sets `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, and a tight `Content-Security-Policy` on JSON responses. `Strict-Transport-Security` is added only when the request is HTTPS.
+
+The Docker nginx config sets the same browser headers on the guest site and staff pages. Its content security policy allows the page, blob QR images, and the Google fonts linked from `web/index.html`. HSTS is sent only when the proxy sets `X-Forwarded-Proto: https`.
+
+## What is still a host task
+
+Connecting Render Postgres, setting `APP_KEY`, taking a backup, and confirming rollback are done in the host dashboard. They are not completed by this repository. See `docs/PRODUCTION_READINESS_AUDIT.md` for the go/no-go decision.

@@ -300,6 +300,25 @@ class HotelOperationsTest extends TestCase
         ])->assertStatus(409);
     }
 
+    public function test_api_sets_security_headers(): void
+    {
+        $this->getJson('/api/v1/health')
+            ->assertOk()
+            ->assertHeader('X-Content-Type-Options', 'nosniff')
+            ->assertHeader('X-Frame-Options', 'DENY')
+            ->assertHeader('Referrer-Policy', 'no-referrer')
+            ->assertHeader('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'; base-uri 'none'");
+    }
+
+    public function test_suspended_staff_cannot_use_an_existing_token(): void
+    {
+        $world = Scenario::make('suspended');
+        $token = $world->reception->createToken('phone')->plainTextToken;
+        $world->reception->forceFill(['status' => UserStatus::Suspended])->save();
+
+        $this->withToken($token)->getJson('/api/v1/staff/me')->assertForbidden();
+    }
+
     public function test_validation_errors_use_a_json_body(): void
     {
         $world = Scenario::make('errors');

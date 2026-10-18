@@ -62,6 +62,15 @@ final class RequestWorkflow
         $guestVisible = $guestVisible && (bool) $request->hotel->settings->guest_messages_enabled;
 
         return DB::transaction(function () use ($actor, $request, $to, $note, $guestVisible, $ip) {
+            $request = HotelRequest::query()->whereKey($request->id)->lockForUpdate()->first();
+            abort_if($request === null, 404);
+            if (! in_array($to, $this->targets($request), true)) {
+                abort(422, 'That status change is not allowed from '.$request->status->value.'.');
+            }
+            if (! $this->roleAllows($actor, $request, $to)) {
+                abort(403, 'You cannot make that status change.');
+            }
+
             $from = $request->status;
             $request->status = $to;
             if ($request->acknowledged_at === null) {
@@ -119,43 +128,55 @@ final class RequestWorkflow
             }
         }
 
-        return DB::transaction(function () use ($actor, $request, $department, $assignee, $ip) {
-            $from = $request->status;
-            $request->department_id = $department->id;
-            if ($request->type === RequestType::Order) {
+        return DB::transaction(function () use ($actor, $request, $department, $assignee, $ip, $selfAccept) {
+            $locked = HotelRequest::query()->whereKey($request->id)->lockForUpdate()->first();
+            abort_if($locked === null, 404);
+            if ($locked->status->isTerminal()) {
+                abort(422, 'This request is already closed.');
+            }
+            if ($selfAccept) {
+                $current = $locked->assignments()->latest('id')->first();
+                if ($current && $current->assigned_to_user_id && (int) $current->assigned_to_user_id !== (int) $actor->id) {
+                    abort(403, 'This task is assigned to someone else.');
+                }
+            }
+
+            $from = $locked->status;
+            $locked->department_id = $department->id;
+            if ($locked->type === RequestType::Order) {
                 if ($from === RequestStatus::Submitted) {
-                    $request->status = RequestStatus::Acknowledged;
+                    $locked->status = RequestStatus::Acknowledged;
                 }
             } elseif (in_array($from, [RequestStatus::Submitted, RequestStatus::Acknowledged], true)) {
-                $request->status = RequestStatus::Assigned;
+                $locked->status = RequestStatus::Assigned;
             }
-            if ($request->acknowledged_at === null && $request->status !== RequestStatus::Submitted) {
-                $request->acknowledged_at = now();
+            if ($locked->acknowledged_at === null && $locked->status !== RequestStatus::Submitted) {
+                $locked->acknowledged_at = now();
             }
-            $request->save();
+            $locked->save();
 
             RequestAssignment::query()->create([
-                'request_id' => $request->id,
-                'hotel_id' => $request->hotel_id,
+                'request_id' => $locked->id,
+                'hotel_id' => $locked->hotel_id,
                 'department_id' => $department->id,
                 'assigned_to_user_id' => $assignee?->id,
                 'assigned_by_user_id' => $actor->id,
             ]);
 
-            if ($from !== $request->status) {
-                $this->history($request, $from, $request->status, $actor, null, false);
+            if ($from !== $locked->status) {
+                $this->history($locked, $from, $locked->status, $actor, null, false);
             }
 
-            AuditLogger::record($actor, 'request.assigned', $request, [
+            AuditLogger::record($actor, 'request.assigned', $locked, [
                 'department_id' => $department->id,
                 'assigned_to_user_id' => $assignee?->id,
-            ], $ip, $request->hotel_id);
+            ], $ip, $locked->hotel_id);
 
             if ($assignee !== null) {
-                NotificationDispatcher::assigned($request, $assignee);
+                NotificationDispatcher::assigned($locked, $assignee);
             }
 
-            return $request->refresh();
+            return $locked->refresh();
         });
     }
 
